@@ -98,14 +98,15 @@ export class MyMCP extends McpAgent<Env> {
           if (batch.length === 0) break;
           page++;
         }
-        const slim = all.map((c: any) => ({
-          name: c.author_username,
-          rating: c.platform_data?.star_rating ?? null,
-          posted_at: c.posted_at,
-          id: c.external_id,
-          has_reply: Array.isArray(c.replies) && c.replies.length > 0,
-        }));
-        return text(JSON.stringify({ total, count: slim.length, data: slim }));
+        const CUTOFF = "2025-07-09"; // trailing 365 days
+        const slim = all
+          .filter((c: any) => (c.posted_at || "").slice(0, 10) >= CUTOFF)
+          .map((c: any) => ({
+            n: c.author_username,
+            r: c.platform_data?.star_rating ?? null,
+            d: (c.posted_at || "").slice(0, 10),
+          }));
+        return text(JSON.stringify({ total, window_count: slim.length, data: slim }));
       },
     );
 
