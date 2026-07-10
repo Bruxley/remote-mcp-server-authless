@@ -85,8 +85,27 @@ export class MyMCP extends McpAgent<Env> {
       async ({ profile_id }) => {
         const pid = needProfile(env, profile_id);
         if (!pid) return text("No profile id. Set POSTPROXY_PROFILE_ID or pass profile_id.");
-        const r = await pp(env, `/api/profiles/${pid}/comments`);
-        return text(r.body);
+        let all: any[] = [];
+        let page = 0;
+        let total = Infinity;
+        while (all.length < total && page < 100) {
+          const rr = await pp(env, `/api/profiles/${pid}/comments?page=${page}&per_page=100`);
+          if (!rr.ok) return text(rr.body);
+          const j = JSON.parse(rr.body);
+          total = typeof j.total === "number" ? j.total : all.length;
+          const batch = j.data ?? [];
+          all = all.concat(batch);
+          if (batch.length === 0) break;
+          page++;
+        }
+        const slim = all.map((c: any) => ({
+          name: c.author_username,
+          rating: c.platform_data?.star_rating ?? null,
+          posted_at: c.posted_at,
+          id: c.external_id,
+          has_reply: Array.isArray(c.replies) && c.replies.length > 0,
+        }));
+        return text(JSON.stringify({ total, count: slim.length, data: slim }));
       },
     );
 
