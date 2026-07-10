@@ -53,8 +53,16 @@ export class MyMCP extends McpAgent<Env> {
       "List connected PostProxy profiles (find your google_business profile id).",
       {},
       async () => {
+        const k = env.POSTPROXY_API_KEY ?? "";
         const r = await pp(env, "/api/profiles");
-        return text(r.body);
+        return text(JSON.stringify({
+          keyPresent: k.length > 0,
+          keyLength: k.length,
+          trimmedLength: k.trim().length,
+          hasQuotes: /^["']|["']$/.test(k),
+          postproxyStatus: r.status,
+          postproxyBody: r.body,
+        }));
       },
     );
 
